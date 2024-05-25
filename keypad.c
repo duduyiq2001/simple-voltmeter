@@ -2,6 +2,9 @@
 #include "utility.h"
 #include <avr/io.h>
 
+#define DDR DDRA
+#define PORT PORTA
+#define PIN PINA
 
 const characters [] = {'\0','1', '2', '3', 'A','4','5','6','B','7','8','9', 'C', '*', '0', '#', 'D' };
 
@@ -22,19 +25,19 @@ int get_key() {
 
 int is_pressed(int r, int c) {
 
-	DDRA = 0x00; // Set Data Direction Register A to output
-	PORTA = 0x00; // Set all bits in Port A to low
+	DDR = 0x00; // Set Data Direction Register A to output
+	PORT = 0x00; // Set all bits in Port A to low
 	r = 3-r;
 	c = 3-c;
 	// Set the row (r) to "0"
-	set_port(&DDRA, c);
-	clear_port(&PORTA,c);
+	set_port(&DDR, c);
+	clear_port(&PORT,c);
 	// Set the column (c) to "high"
-	clear_port(&DDRA, r+4);
-	set_port(&PORTA,r+4);
+	clear_port(&DDR, r+4);
+	set_port(&PORT,r+4);
 	wait_avr(10);
 	//DDRA = 0;
-	if (/*GPIO @ c = 0*/  !get_pin(&PINA,r+4)) {    // Check if the corresponding pin is high
+	if (/*GPIO @ c = 0*/  !get_pin(&PIN,r+4)) {    // Check if the corresponding pin is high
 		wait_avr(10);
 		return 1;
 	}
