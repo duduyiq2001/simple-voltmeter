@@ -39,12 +39,19 @@ volatile char curr_char_input = '\0';
 int reading_prev_prev = 0; 
 int reading_prev = 0; 
 int reading_curr = 0; 
+volatile uint16_t CURR_TIME = 0; 
 
 unsigned int total_combined = 0; 
 unsigned char num_readings = 0; 
 #define NUM_TOP_BITS 5
 #define NUM_TOTAL_BITS 8
 #define NUM_COMBINATIONS 8 //3 ^ 2
+
+
+
+ISR(TIMER1_COMPA_vect) {
+    CURR_TIME++;
+}
 
 
 int get_sample(){
@@ -72,11 +79,6 @@ void read_and_update_samples() {
 
 }
 
-// uint_t curr_time = 0; 
-// uint_t 
-
-
-
 int get_top(int sample_obtained, char num_total_bits, char num_top_bits) {
 	return sample_obtained >> (num_total_bits - num_top_bits); 
 }
@@ -96,27 +98,14 @@ int get_bottom(int full_num, char num_bottom_bits) {
 
 }
 
-
-
-
 float get_bottom_float(int full_num, int num_combinations, int num_bottom_bits) {
 	
 	return (float)((float) get_bottom(full_num, num_bottom_bits) / (float) num_combinations); 
 }
 
-
-
-
-
-
-
-
-
-
 char time_passed_equal_to_period() {
-	return 1; 
+	return SENSOR_READ_PERIOD_MS <= CURR_TIME || 0 == SENSOR_READ_PERIOD_MS ; 
 }
-
 
 float convert_int_to_float(int int_to_convert, char total_bits, char top_bits) {
 	char bottom_bits = total_bits - top_bits; 
@@ -128,7 +117,6 @@ float convert_int_to_float(int int_to_convert, char total_bits, char top_bits) {
 	return bottom_float + top; 
 	 
 }
-
 
 void print_sample_clear(int sample_to_print, int r, int c){
 	
@@ -151,14 +139,22 @@ void print_sample_no_clear(int sample_to_print, int r, int c){
 	lcd_puts2(buf);
 }
 
+void reset_timer() {
+	CURR_TIME = 0; 
+}
+
 void reset_samples() {
+	read_and_update_samples(); //may or may not need to include this line based on implementation	
 	reading_prev_prev = 0 ;
 	reading_prev = 0; 
 	total_combined = reading_curr; 
 	num_readings = 1; 
 
-}
+	reset_timer(); //may or may not need this line based on implementation as well
 
+	/* alt version below of what reset samples should look like */
+
+}
 
 int get_avg() {
 	return total_combined / num_readings; 
@@ -172,11 +168,37 @@ void reset_curr_char() {
 	set_curr_char('\0');
 }
 
+void print_samples() {
+		print_sample_clear(reading_curr, 0, 0);
+		
+
+		if (reading_prev) {
+			print_sample_no_clear(reading_curr, 0, 5);
+		} else {
+			lcd_pos(0, 5);
+			lcd_puts2("--");
+		}
+
+		if (reading_prev_prev) {
+			print_sample_no_clear(reading_curr, 1, 0);
+
+		}
+		else {
+			lcd_pos(1,0);
+			lcd_puts2("--");
+		}
+
+		if (reading_prev_prev && reading_prev) {
+			print_sample_no_clear(get_avg(), 1, 5);
+		} else {
+			lcd_pos(1, 5);
+			lcd_puts2("--");
+		}
+}
+
 
 void sample_sm() {
 	while (1){
-
-		
 
 		curr_char_input = get_char1(); 
 
@@ -189,38 +211,11 @@ void sample_sm() {
 		if (/*num ms passed = 500*/ time_passed_equal_to_period()) {
 
 			read_and_update_samples(); 
-			print_sample_clear(reading_curr, 0, 0);
-		
 
-			if (reading_prev) {
-				print_sample_no_clear(reading_curr, 0, 5);
-			} else {
-				lcd_pos(0, 5);
-				lcd_puts2("--");
-			}
-
-			if (reading_prev_prev) {
-				print_sample_no_clear(reading_curr, 1, 0);
-
-			}
-			else {
-				lcd_pos(1,0);
-				lcd_puts2("--");
-			}
-
-			if (reading_prev_prev && reading_prev) {
-				print_sample_no_clear(get_avg(), 1, 5);
-			} else {
-				lcd_pos(1, 5);
-				lcd_puts2("--");
-			}
+			print_samples(); 
+			
 			/*num ms passed = 0 / reset*/
 		}
-
-
-
-
-
 	}
 }
 
@@ -260,17 +255,9 @@ void test1(){
 
 int main(void)
 {
-    /* Replace with your application code */
-    // test1();
 
-
-	// char c = get_char1(); 
-
-
-	// lcd_init(); 
-	// lcd_clr(); 
-	// lcd_pos(0, 0); 
-	// lcd_put(c);
+	sei(); //allows global interrupts
+   
 
 
 	sample_sm(); 
