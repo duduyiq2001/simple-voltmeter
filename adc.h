@@ -5,6 +5,6 @@
 //  *  Author: Administrator
 //  */
 
-// #include <avr/io.h>
-// #include "avr.h"
-// int get_sample();
+#include <avr/io.h>
+#include "avr.h"
+int get_sample();

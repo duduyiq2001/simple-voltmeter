@@ -60,6 +60,34 @@ char get_char(){
 }
 
 
+char get_char_wait (){
+
+	while(!get_key()){
+
+	}
+	int ret_key = get_key();
+	while(get_key() != '\0'){
+	}
+	return characters[ret_key];
+	
+}
+char get_char_wait_max (unsigned short ms){
+  	TCCR0 = 3;
+	// volatile uint i = 0; 
+	while(!get_key() && ms-- ){
+		TCNT0 = (unsigned char)(256 - (XTAL_FRQ / 64) * 0.001);
+		SET_BIT(TIFR, TOV0);
+		WDR();
+		while (!GET_BIT(TIFR, TOV0));
+	}
+
+  	TCCR0 = 0;
+	int ret_key = get_key();
+	// while(get_key() != '\0'){
+	// }
+	return characters[ret_key];
+	
+}
 char get_char1(){
 	
 	int ret_key = get_key();
@@ -67,3 +95,8 @@ char get_char1(){
 	return characters[ret_key];
 	
 }
+
+// char get_char()
+
+
+

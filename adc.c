@@ -12,6 +12,7 @@
 // 		while (ADCSRA & 1 << 5);
 	    
 		
-// 		return ADCL+ (ADCH << 8);
+// 		// return ADCL+ (ADCH << 8);
+//         return 10; 
 
 // }

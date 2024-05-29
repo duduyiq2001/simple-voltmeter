@@ -15,6 +15,7 @@
 #define RW_PIN 1
 #define EN_PIN 2
 
+
 static inline void
 set_data(unsigned char x)
 {
