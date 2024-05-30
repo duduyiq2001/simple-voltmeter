@@ -18,6 +18,17 @@
  * Created: 5/24/2024 12:55:50 AM
  *  Author: Administrator
  */
+
+int get_sample_pa1(){
+	
+    // configure the ADC
+    ADMUX = 0b01000001;  // Change this line to select ADC1
+    ADCSRA = 0b11000000;
+    while (ADCSRA & (1 << 5));
+    
+    return ADCL + (ADCH << 8);
+
+}
 void float_to_string(char *buffer, float value, int places)
 {
 	int d1 = (int)value;				  // Get the integer part
@@ -25,6 +36,16 @@ void float_to_string(char *buffer, float value, int places)
 	int d2 = trunc(f2 * pow(10, places)); // Turn into integer
 	sprintf(buffer, "%d.%d", d1, d2);	  // Format as a string
 }
+
+
+enum mode {
+	DIFFERENTIAL, NORMAL
+};
+
+
+enum mode CURR_MODE = NORMAL; 
+
+#define MODE_CHANGE_BUTTON '#'
 int get_sample()
 {
 
@@ -85,6 +106,8 @@ void print_stats(int instant, int min, int max, unsigned long long total, unsign
 	lcd_puts2("avg:");
 	lcd_puts2(buf);
 }
+
+
 int main(void)
 {
 	/* Replace with your application code */
@@ -98,9 +121,56 @@ int main(void)
 	get_sample();
 	while (1)
 	{
-		avr_wait(500);
-		if (get_char1() == '1')
-		{
+		
+		int instant; 
+		if ( NORMAL == CURR_MODE)	{
+			avr_wait(500);
+			
+			instant = get_sample();
+			total += instant;
+			count += 1;
+			if (instant < min)
+			{
+				min = instant;
+			}
+			if (instant > max)
+			{
+				max = instant;
+			}
+		} else if (DIFFERENTIAL == CURR_MODE) {
+			avr_wait(500);
+			
+			instant = get_sample();
+			int instant_2 = get_sample_pa1(); 
+
+			instant -= instant_2; 
+
+			total += instant;
+			count += 1;
+			if (instant < min)
+			{
+				min = instant;
+			}
+			if (instant > max)
+			{
+				max = instant;
+			}	
+		}
+		print_stats(instant, min, max, total, count);
+
+		char user_in = get_char1(); 
+		if ('\0' == user_in){
+			continue; 
+		} else if ('1' == user_in ) {
+			total = 0;
+			count = 0;
+			min = 1023;
+			max = 0;
+			print_stats(0, min, max, total, count);
+			avr_wait(1000);
+		} else if (MODE_CHANGE_BUTTON == user_in) {
+			CURR_MODE = DIFFERENTIAL; 
+
 			total = 0;
 			count = 0;
 			min = 1023;
@@ -108,17 +178,5 @@ int main(void)
 			print_stats(0, min, max, total, count);
 			avr_wait(1000);
 		}
-		int instant = get_sample();
-		total += instant;
-		count += 1;
-		if (instant < min)
-		{
-			min = instant;
-		}
-		if (instant > max)
-		{
-			max = instant;
-		}
-		print_stats(instant, min, max, total, count);
 	}
 }
