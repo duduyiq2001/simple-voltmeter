@@ -34,18 +34,29 @@ volatile char curr_char_input = '\0';
 // 	}
 // }
 
+int get_exp(int num, int power) {
+	int ret_num = num; 
+
+	for (int i = 0 ; i < power; i++) {
+		ret_num *= num; 
+	}
+
+	return ret_num;
 
 
-int reading_prev_prev = 0; 
-int reading_prev = 0; 
-int reading_curr = 0; 
+}
+
+#define UNDEFINED_READING -1
+int min_sample = UNDEFINED_READING; 
+int max_sample = UNDEFINED_READING; 
+int reading_curr = UNDEFINED_READING; 
 volatile uint16_t CURR_TIME = 0; 
 
 unsigned int total_combined = 0; 
 unsigned char num_readings = 0; 
 #define NUM_TOP_BITS 5
-#define NUM_TOTAL_BITS 8
-#define NUM_COMBINATIONS 8 //3 ^ 2
+#define NUM_TOTAL_BITS 10
+#define NUM_COMBINATIONS get_exp(NUM_TOTAL_BITS - NUM_TOP_BITS, 2) //3 ^ 2
 
 
 
@@ -62,20 +73,31 @@ int get_sample(){
 		while (ADCSRA & 1 << 5);
 	    
 		
-		return ADCL+ (ADCH << 8);
+		return ADCL + (ADCH << 8);
 
 }
 
+void reset_timer() {
+	CURR_TIME = 0; 
+}
 void read_and_update_samples() {
 
-		reading_prev_prev = reading_prev;
-		reading_prev = reading_curr; 
 		reading_curr = get_sample(); 
-
+		if (UNDEFINED_READING == min_sample) {
+			min_sample = reading_curr; 
+		} else if (reading_curr < min_sample) {
+			min_sample = reading_curr; 
+		}
+		if (UNDEFINED_READING == max_sample) {
+			max_sample = reading_curr; 
+		} else if (reading_curr < max_sample) {
+			max_sample = reading_curr; 
+		}
 	
 		total_combined += reading_curr; 
 
 		num_readings += 1; 
+		reset_timer(); 
 
 }
 
@@ -139,14 +161,11 @@ void print_sample_no_clear(int sample_to_print, int r, int c){
 	lcd_puts2(buf);
 }
 
-void reset_timer() {
-	CURR_TIME = 0; 
-}
 
 void reset_samples() {
 	read_and_update_samples(); //may or may not need to include this line based on implementation	
-	reading_prev_prev = 0 ;
-	reading_prev = 0; 
+	min_sample = 0 ;
+	max_sample = 0; 
 	total_combined = reading_curr; 
 	num_readings = 1; 
 
@@ -172,14 +191,14 @@ void print_samples() {
 		print_sample_clear(reading_curr, 0, 0);
 		
 
-		if (reading_prev) {
+		if (max_sample) {
 			print_sample_no_clear(reading_curr, 0, 5);
 		} else {
 			lcd_pos(0, 5);
 			lcd_puts2("--");
 		}
 
-		if (reading_prev_prev) {
+		if (min_sample) {
 			print_sample_no_clear(reading_curr, 1, 0);
 
 		}
@@ -188,7 +207,7 @@ void print_samples() {
 			lcd_puts2("--");
 		}
 
-		if (reading_prev_prev && reading_prev) {
+		if (min_sample && max_sample) {
 			print_sample_no_clear(get_avg(), 1, 5);
 		} else {
 			lcd_pos(1, 5);
