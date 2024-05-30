@@ -6,7 +6,7 @@
 #define PORT PORTA
 #define PIN PINA
 
-const characters [] = {'\0','1', '2', '3', 'A','4','5','6','B','7','8','9', 'C', '*', '0', '#', 'D' };
+const char characters [] = {'\0','1', '2', '3', 'A','4','5','6','B','7','8','9', 'C', '*', '0', '#', 'D' };
 
 
 int get_key() {

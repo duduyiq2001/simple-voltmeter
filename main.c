@@ -184,9 +184,17 @@ float convert_int_to_float(int int_to_convert, char total_bits, char top_bits) {
 
 	int top = get_top(int_to_convert, total_bits, top_bits);
 
-	return bottom_float + top; 
+	if (int_to_convert >= 0) {
+
+		return bottom_float + top; 
+	} else {
+
+		return -(bottom_float + top); 
+	}
+
 	 
 }
+
 
 void print_sample_clear(int sample_to_print, int r, int c){
 	
