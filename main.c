@@ -46,16 +46,38 @@ int get_exp(int num, int power) {
 
 }
 
+
+int get_sample_pa1(){
+	
+    // configure the ADC
+    ADMUX = 0b01000001;  // Change this line to select ADC1
+    ADCSRA = 0b11000000;
+    while (ADCSRA & (1 << 5));
+    
+    return ADCL + (ADCH << 8);
+
+}
+
+enum mode {
+	DIFFERENTIAL, NORMAL
+};
+
+
+enum mode CURR_MODE = NORMAL; 
+
 #define UNDEFINED_READING -1
 int min_sample = UNDEFINED_READING; 
 int max_sample = UNDEFINED_READING; 
 int reading_curr = UNDEFINED_READING; 
+int pa1_reading = UNDEFINED_READING; 
 volatile uint16_t CURR_TIME = 0; 
+
+#define MODE_CHANGE_BUTTON '#'
 
 unsigned int total_combined = 0; 
 unsigned char num_readings = 0; 
 #define NUM_TOP_BITS 5
-#define NUM_TOTAL_BITS 10
+#define NUM_TOTAL_BITS 8
 #define NUM_COMBINATIONS get_exp(NUM_TOTAL_BITS - NUM_TOP_BITS, 2) //3 ^ 2
 
 
@@ -83,6 +105,32 @@ void reset_timer() {
 void read_and_update_samples() {
 
 		reading_curr = get_sample(); 
+		if (UNDEFINED_READING == min_sample) {
+			min_sample = reading_curr; 
+		} else if (reading_curr < min_sample) {
+			min_sample = reading_curr; 
+		}
+		if (UNDEFINED_READING == max_sample) {
+			max_sample = reading_curr; 
+		} else if (reading_curr < max_sample) {
+			max_sample = reading_curr; 
+		}
+	
+		total_combined += reading_curr; 
+
+		num_readings += 1; 
+		reset_timer(); 
+
+}
+
+void read_and_update_samples_dif() {
+
+		// reading_curr
+		int reading_pa0 = get_sample(); 
+		int reading_pa1 = get_sample_pa1(); 
+
+		reading_curr = reading_pa0 - reading_pa1; 
+
 		if (UNDEFINED_READING == min_sample) {
 			min_sample = reading_curr; 
 		} else if (reading_curr < min_sample) {
@@ -214,27 +262,56 @@ void print_samples() {
 			lcd_puts2("--");
 		}
 }
+void change_mode () {
+	if (NORMAL == CURR_MODE) {
+		CURR_MODE = DIFFERENTIAL;
+	} else {
+		CURR_MODE = NORMAL;
+	}
+}
 
 
 void sample_sm() {
 	while (1){
 
-		curr_char_input = get_char1(); 
+
+		if (NORMAL == CURR_MODE) {
+			curr_char_input = get_char1(); 
+
+			 
+
+
+			if (/*num ms passed = 500*/ time_passed_equal_to_period()) {
+
+				read_and_update_samples(); 
+
+				print_samples(); 
+				
+				/*num ms passed = 0 / reset*/
+			}
+		} else if (DIFFERENTIAL == CURR_MODE) {
+			curr_char_input = get_char1(); 
+
+			if (/*num ms passed = 500*/ time_passed_equal_to_period()) {
+
+				read_and_update_samples_dif(); 
+
+				print_samples(); 
+				
+				/*num ms passed = 0 / reset*/
+			}	
+		}
+
+
 
 		if (RESET_BUTTON == curr_char_input) {
 			reset_samples(); 
 			reset_curr_char(); 
-		} 
-
-
-		if (/*num ms passed = 500*/ time_passed_equal_to_period()) {
-
-			read_and_update_samples(); 
-
-			print_samples(); 
-			
-			/*num ms passed = 0 / reset*/
+		} else if (MODE_CHANGE_BUTTON == curr_char_input ) {
+			change_mode(); 
 		}
+
+		
 	}
 }
 
