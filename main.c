@@ -22,7 +22,7 @@
 int get_sample_pa1(){
 	
     // configure the ADC
-    ADMUX = 0b01000001;  // Change this line to select ADC1
+    ADMUX = 0b01010000;  // Change this line to select ADC1
     ADCSRA = 0b11000000;
     while (ADCSRA & (1 << 5));
     
@@ -123,7 +123,7 @@ int main(void)
 	{
 		
 		int instant; 
-		if ( NORMAL == CURR_MODE)	{
+		if ( CURR_MODE == NORMAL)	{
 			avr_wait(500);
 			
 			instant = get_sample();
@@ -137,13 +137,15 @@ int main(void)
 			{
 				max = instant;
 			}
-		} else if (DIFFERENTIAL == CURR_MODE) {
+		} else if (CURR_MODE == DIFFERENTIAL) {
 			avr_wait(500);
 			
-			instant = get_sample();
-			int instant_2 = get_sample_pa1(); 
+		
+			instant = get_sample_pa1(); 
+			 
 
-			instant -= instant_2; 
+			instant *= 2;
+
 
 			total += instant;
 			count += 1;
@@ -169,7 +171,12 @@ int main(void)
 			print_stats(0, min, max, total, count);
 			avr_wait(1000);
 		} else if (MODE_CHANGE_BUTTON == user_in) {
-			CURR_MODE = DIFFERENTIAL; 
+			if(CURR_MODE == NORMAL){
+			CURR_MODE = DIFFERENTIAL;
+			}
+			else{
+				CURR_MODE = NORMAL;
+			} 
 
 			total = 0;
 			count = 0;
