@@ -9,15 +9,21 @@
 #include "avr.h"
 #include "keypad.h"
 #include "lcd.h"
-#include <stdio.h>
+#include "stdio.h"
 #include <math.h>
-
+#include <time.h>
+#include <avr/wdt.h>
 /*
  * adc.c
  *
  * Created: 5/24/2024 12:55:50 AM
  *  Author: Administrator
  */
+// volatile unsigned char TimerFlag = 0; // ISR raises, main() lowers
+// void TimerISR()
+// {
+// 	TimerFlag = 1;
+// }
 void float_to_string(char *buffer, float value, int places)
 {
 	int d1 = (int)value;				  // Get the integer part
@@ -85,6 +91,36 @@ void print_stats(int instant, int min, int max, unsigned long long total, unsign
 	lcd_puts2("avg:");
 	lcd_puts2(buf);
 }
+
+void print_none()
+{
+	lcd_clr();
+	/**
+	 * inputting instant
+	 */
+
+	lcd_pos(0, 0);
+	lcd_puts2("ins:");
+	lcd_puts2("--");
+	/**
+	 * inputting min
+	 */
+	lcd_pos(1, 0);
+	lcd_puts2("min:");
+	lcd_puts2("--");
+	/**
+	 * inputting max
+	 */
+	lcd_pos(0, 9);
+	lcd_puts2("max:");
+	lcd_puts2("--");
+	/**
+	 * inputting avg
+	 */
+	lcd_pos(1, 9);
+	lcd_puts2("avg:");
+	lcd_puts2("--");
+}
 int main(void)
 {
 	/* Replace with your application code */
@@ -95,18 +131,24 @@ int main(void)
 	int max = 0;
 	avr_init();
 	lcd_init();
+	wdt_disable();	
 	get_sample();
+	// TimerSet(500);
 	while (1)
 	{
-		avr_wait(500);
+        avr_wait(495);
 		if (get_char1() == '1')
 		{
 			total = 0;
 			count = 0;
 			min = 1023;
 			max = 0;
-			print_stats(0, min, max, total, count);
-			avr_wait(1000);
+			print_none();
+			avr_wait(200);
+			while (get_char() != '2'){
+				print_none();
+			}
+			
 		}
 		int instant = get_sample();
 		total += instant;
