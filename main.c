@@ -22,7 +22,7 @@
 int get_sample_pa1(){
 	
     // configure the ADC
-    ADMUX = 0b01010000;  // Change this line to select ADC1
+    ADMUX = 0b01010000;  
     ADCSRA = 0b11000000;
     while (ADCSRA & (1 << 5));
     
@@ -52,8 +52,7 @@ int get_sample()
 	// configure the ADC
 	ADMUX = 0b01000000;
 	ADCSRA = 0b11000000;
-	while (ADCSRA & 1 << 5)
-		;
+	while (ADCSRA & 1 << 5);
 
 	return ADCL + (ADCH << 8);
 }
